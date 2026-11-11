@@ -2,46 +2,83 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const config = {
-  // 1. Candidate Persona & Pitch Profile
+  // 1. Candidate Persona & Pitch Profile (Pure Frontend Developer)
   candidateProfile:
     process.env.CANDIDATE_PROFILE ||
-    "Full-Stack / Frontend Engineer (Next.js, TypeScript, Tailwind CSS, REST & AI APIs, MongoDB).",
+    "Frontend Developer (React, Next.js, TypeScript, JavaScript, Tailwind CSS, Responsive UI, Web Performance, State Management, Modern Web Apps).",
 
-  // 2. Role Title Filtering (must match at least one)
+  // 2. Allowed Title Keywords (strictly Frontend / Web UI roles)
   allowedTitleWords: [
-    "developer",
-    "engineer",
     "frontend",
     "front-end",
-    "fullstack",
-    "full stack",
-    "software",
-    "web",
+    "front end",
+    "react",
+    "next.js",
+    "nextjs",
+    "ui engineer",
+    "ui developer",
+    "web developer",
+    "web engineer",
+    "javascript developer",
+    "website",
   ],
 
-  // 3. Exclusions (skip if title matches any)
+  // 3. Strict Exclusions (skip if title matches ANY Senior, Lead, or Backend keyword)
   negativeTitleWords: [
-    "content reviewer",
-    "customer support",
-    "sales",
-    "recruiter",
+    // Seniority exclusions
+    "senior",
+    "sr.",
+    "sr ",
+    "lead",
+    "principal",
+    "staff",
+    "architect",
+    "director",
+    "head",
     "manager",
-    "intern",
+    "vp",
+    "chief",
+    // Backend & infrastructure exclusions
+    "backend",
+    "back-end",
+    "back end",
+    "devops",
+    "sre",
+    "infrastructure",
+    "platform",
+    "data engineer",
+    "database",
+    "cloud",
+    "security",
+    "blockchain",
+    "solidity",
+    "android",
+    "ios",
+    "mobile developer",
+    // Non-engineering
     "qa",
     "tester",
+    "intern",
+    "sales",
+    "support",
+    "recruiter",
+    "writer",
+    "content",
   ],
 
-  // 4. Core Stack & Keywords (must match in title or body)
+  // 4. Core Frontend Tech Keywords (must match in title or body)
   techKeywords: [
     "react",
     "next.js",
     "nextjs",
+    "tailwind",
     "typescript",
     "javascript",
-    "tailwind",
-    "node",
-    "fullstack",
+    "css",
+    "html",
+    "ui",
     "frontend",
+    "front-end",
   ],
 
   // 5. Execution Limits

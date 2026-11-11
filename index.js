@@ -66,9 +66,9 @@ async function fetchJobs() {
     console.error("⚠️ Failed to reach Remotive:", err.message);
   }
 
-  // Source B: Jobicy
+  // Source B: Jobicy (Targeting remote frontend roles)
   try {
-    const res = await fetch("https://jobicy.com/api/v2/remote-jobs?count=20&tag=dev");
+    const res = await fetch("https://jobicy.com/api/v2/remote-jobs?count=50&tag=frontend");
     if (res.ok) {
       const data = await res.json();
       const jobicyJobs = (data.jobs || []).map((j) => ({
