@@ -134,7 +134,7 @@ async function analyzeJob(job, retries = 2) {
     .slice(0, 2500);
 
   const prompt = `
-You are a Principal Software Engineer helping a candidate pitch proof-of-work.
+You are a Principal Software Engineer crafting an actionable proof-of-work pitch for a developer.
 Target Company: ${job.company_name}
 Role Title: ${job.title}
 Job Excerpt:
@@ -143,13 +143,19 @@ ${cleanDescription}
 Candidate Profile:
 - Full-Stack / Frontend Engineer (Next.js, TypeScript, Tailwind CSS, REST & AI APIs, MongoDB).
 
-Provide:
-1. Target Company & Role
-2. The core technical or UX bottleneck this team faces based on the excerpt.
-3. ONE lightweight proof-of-work demo (a standalone component or feature buildable in 45 mins with Next.js/Tailwind) that proves the candidate can solve it.
-4. A 3-sentence direct outreach message to the founder/lead engineer. DO NOT include a link yet (ask permission first).
+Format your response strictly using Telegram-compatible HTML tags (<b>, <i>, <code>). Do NOT use Markdown characters like **, __, #, or backticks.
 
-Keep it clean, concise, and professional.
+Output structure:
+🏢 <b>Company & Role:</b> ${job.company_name} — ${job.title}
+
+⚡ <b>Core Bottleneck:</b>
+[1-2 sentences identifying the real engineering or UX pain point based on the excerpt]
+
+🛠️ <b>Proof-of-Work Demo (45 Mins):</b>
+[1 concise description of a standalone component or prototype built with Next.js/Tailwind that proves capability]
+
+💬 <b>Cold Outreach Message:</b>
+<code>[A punchy 3-sentence message to the founder/lead engineer asking permission to share the demo. No links.]</code>
 `;
 
   try {
@@ -169,30 +175,58 @@ Keep it clean, concise, and professional.
   }
 }
 
-// 4. Send plain-text Telegram alert (safely clamped to Telegram 4096 char limit)
+// 4. Send Telegram alert with rich HTML and automatic plain-text fallback
 async function sendTelegramAlert(analysisText, jobUrl) {
-  let payload = `🚀 [DEVRADAR OPPORTUNITY]\n\n${analysisText}\n\n🔗 Application Link:\n${jobUrl}`;
+  let htmlPayload = `🚀 <b>DEVRADAR OPPORTUNITY</b>\n\n${analysisText.trim()}\n\n🔗 <a href="${jobUrl}"><b>Apply / View Role</b></a>`;
 
-  // Telegram limit is 4096 characters
-  if (payload.length > 4000) {
-    payload = payload.slice(0, 3950) + `\n\n...[truncated]\n\n🔗 Application Link:\n${jobUrl}`;
+  if (htmlPayload.length > 4000) {
+    htmlPayload = htmlPayload.slice(0, 3900) + `\n\n...[truncated]\n\n🔗 <a href="${jobUrl}"><b>Apply / View Role</b></a>`;
   }
 
-  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: payload,
-    }),
-  });
+  // 1. Try formatted HTML first
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: htmlPayload,
+        parse_mode: "HTML",
+        disable_web_page_preview: false,
+      }),
+    });
 
-  const data = await res.json();
-  if (!data.ok) {
-    console.error("❌ Telegram API error:", data.description);
+    const data = await res.json();
+    if (data.ok) return true;
+
+    console.warn("⚠️ Telegram HTML parse failed, falling back to clean plain text:", data.description);
+  } catch (networkErr) {
+    console.warn("⚠️ HTML send attempt failed:", networkErr.message);
+  }
+
+  // 2. Fallback to clean plain text if HTML had parsing issues
+  try {
+    const cleanText = analysisText.replace(/<[^>]*>?/gm, "").trim();
+    let plainPayload = `🚀 [DEVRADAR OPPORTUNITY]\n\n${cleanText}\n\n🔗 Application Link:\n${jobUrl}`;
+    if (plainPayload.length > 4000) {
+      plainPayload = plainPayload.slice(0, 3950) + `\n\n...[truncated]\n\n🔗 Application Link:\n${jobUrl}`;
+    }
+
+    const fallbackRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: plainPayload,
+      }),
+    });
+
+    const fallbackData = await fallbackRes.json();
+    return fallbackData.ok;
+  } catch (err) {
+    console.error("❌ Telegram fallback also failed:", err.message);
     return false;
   }
-  return true;
 }
 
 // 5. Execution Orchestrator
