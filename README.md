@@ -16,11 +16,10 @@ To make it run autonomously on GitHub, add these repository secrets in **Setting
 | `TELEGRAM_BOT_TOKEN` | Your Telegram Bot token from @BotFather |
 | `TELEGRAM_CHAT_ID` | Your Telegram personal or group chat ID |
 
-### Local Testing
+### Local Execution
 
 ```bash
 npm install
-npm test-bot   # Test Telegram connection
 npm start      # Run job radar locally
 ```
 
