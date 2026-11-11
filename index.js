@@ -8,7 +8,7 @@ dotenv.config();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 if (!GEMINI_API_KEY || !TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
   console.warn("⚠️ Warning: Missing one or more environment variables (GEMINI_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID).");
@@ -74,6 +74,27 @@ async function fetchJobs() {
     }
   } catch (err) {
     console.error("⚠️ Failed to reach Jobicy:", err.message);
+  }
+
+  // Source C: Arbeitnow (Remote Tech Jobs)
+  try {
+    const res = await fetch("https://www.arbeitnow.com/api/job-board-api");
+    if (res.ok) {
+      const data = await res.json();
+      const arbeitnowJobs = (data.data || [])
+        .filter((j) => j.remote)
+        .map((j) => ({
+          id: j.slug || j.url,
+          company_name: j.company_name,
+          title: j.title,
+          description: j.description,
+          url: j.url,
+        }));
+      jobs.push(...arbeitnowJobs);
+      console.log(`📡 Arbeitnow returned ${arbeitnowJobs.length} remote jobs.`);
+    }
+  } catch (err) {
+    console.error("⚠️ Failed to reach Arbeitnow:", err.message);
   }
 
   return jobs;
