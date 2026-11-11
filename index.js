@@ -2,13 +2,13 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI } from "@google/genai";
+import { config } from "./config.js";
 
 dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 if (!GEMINI_API_KEY || !TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
   console.warn("⚠️ Warning: Missing one or more environment variables (GEMINI_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID).");
@@ -38,6 +38,15 @@ function saveSeenJobs(seenSet) {
   } catch (err) {
     console.error("⚠️ Failed to write to seen_jobs.json:", err.message);
   }
+}
+
+// Helper: Generate one-click founder and lead discovery links
+function buildFounderSearchLinks(companyName) {
+  const cleanCompany = encodeURIComponent((companyName || "").trim());
+  const linkedinUrl = `https://www.linkedin.com/search/results/people/?keywords=${cleanCompany}%20founder%20OR%20CTO`;
+  const twitterUrl = `https://twitter.com/search?q=${cleanCompany}%20founder%20OR%20CTO`;
+  const googleFounderUrl = `https://www.google.com/search?q=site%3Alinkedin.com%2Fin%20%22${cleanCompany}%22%20(founder%20OR%20CTO%20OR%20%22engineering%20lead%22)`;
+  return { linkedinUrl, twitterUrl, googleFounderUrl };
 }
 
 // 1. Fetch live jobs from multiple open APIs
@@ -100,12 +109,8 @@ async function fetchJobs() {
   return jobs;
 }
 
-// 2. Filter for relevant stacks and unseen jobs
+// 2. Filter for relevant stacks and unseen jobs (using config.js)
 function filterRelevantJobs(jobs, seenJobs) {
-  const allowedTitleWords = ["developer", "engineer", "frontend", "front-end", "fullstack", "full stack", "software"];
-  const negativeWords = ["content reviewer", "customer support", "sales", "recruiter", "manager"];
-  const techKeywords = ["react", "next.js", "nextjs", "typescript", "javascript", "tailwind", "node"];
-
   return jobs.filter((job) => {
     const jobKey = job.url || job.id || `${job.company_name}-${job.title}`;
     if (seenJobs.has(jobKey)) {
@@ -116,14 +121,14 @@ function filterRelevantJobs(jobs, seenJobs) {
     const body = `${job.title} ${job.description || ""}`.toLowerCase();
 
     // Must look like an engineering title
-    const isDevRole = allowedTitleWords.some((word) => title.includes(word));
-    // Must NOT be customer support/content review
-    const isNotExcluded = !negativeWords.some((word) => title.includes(word));
+    const isDevRole = config.allowedTitleWords.some((word) => title.includes(word));
+    // Must NOT be excluded
+    const isNotExcluded = !config.negativeTitleWords.some((word) => title.includes(word));
     // Must mention core stack
-    const hasStack = techKeywords.some((kw) => body.includes(kw));
+    const hasStack = config.techKeywords.some((kw) => body.includes(kw));
 
     return isDevRole && isNotExcluded && hasStack;
-  }).slice(0, 3); // Process up to 3 fresh high-match roles per run
+  }).slice(0, config.maxJobsPerRun);
 }
 
 // 3. Technical Gap Diagnosis via Gemini (with 503 & 429 retry protection)
@@ -141,7 +146,7 @@ Job Excerpt:
 ${cleanDescription}
 
 Candidate Profile:
-- Full-Stack / Frontend Engineer (Next.js, TypeScript, Tailwind CSS, REST & AI APIs, MongoDB).
+- ${config.candidateProfile}
 
 Format your response strictly using Telegram-compatible HTML tags (<b>, <i>, <code>). Do NOT use Markdown characters like **, __, #, or backticks.
 
@@ -160,7 +165,7 @@ Output structure:
 
   try {
     const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
+      model: config.geminiModel,
       contents: prompt,
     });
     return response.text;
@@ -175,15 +180,50 @@ Output structure:
   }
 }
 
-// 4. Send Telegram alert with rich HTML and automatic plain-text fallback
-async function sendTelegramAlert(analysisText, jobUrl) {
-  let htmlPayload = `🚀 <b>DEVRADAR OPPORTUNITY</b>\n\n${analysisText.trim()}\n\n🔗 <a href="${jobUrl}"><b>Apply / View Role</b></a>`;
+// 4. Send Telegram alert with interactive inline buttons and fallback
+async function sendTelegramAlert(analysisText, job) {
+  const jobUrl = job.url;
+  const { linkedinUrl, twitterUrl, googleFounderUrl } = buildFounderSearchLinks(job.company_name);
+
+  // Validate URL helper
+  const isValidUrl = (u) => {
+    try {
+      const parsed = new URL(u);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
+  // Build interactive inline keyboard
+  const inlineKeyboard = [];
+  const row1 = [];
+  if (isValidUrl(jobUrl)) {
+    row1.push({ text: "🚀 Apply / View Role", url: jobUrl });
+  }
+  if (isValidUrl(linkedinUrl)) {
+    row1.push({ text: "💼 LinkedIn Search", url: linkedinUrl });
+  }
+  if (row1.length > 0) inlineKeyboard.push(row1);
+
+  const row2 = [];
+  if (isValidUrl(googleFounderUrl)) {
+    row2.push({ text: "🔎 Google Founder Search", url: googleFounderUrl });
+  }
+  if (isValidUrl(twitterUrl)) {
+    row2.push({ text: "🐦 Search on X", url: twitterUrl });
+  }
+  if (row2.length > 0) inlineKeyboard.push(row2);
+
+  const replyMarkup = inlineKeyboard.length > 0 ? { inline_keyboard: inlineKeyboard } : undefined;
+
+  let htmlPayload = `🚀 <b>DEVRADAR OPPORTUNITY</b>\n\n${analysisText.trim()}\n\n🔗 <a href="${jobUrl}"><b>Apply / View Role</b></a> | <a href="${googleFounderUrl}"><b>Google Founder Search</b></a>`;
 
   if (htmlPayload.length > 4000) {
     htmlPayload = htmlPayload.slice(0, 3900) + `\n\n...[truncated]\n\n🔗 <a href="${jobUrl}"><b>Apply / View Role</b></a>`;
   }
 
-  // 1. Try formatted HTML first
+  // 1. Try formatted HTML with interactive buttons
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -192,7 +232,8 @@ async function sendTelegramAlert(analysisText, jobUrl) {
         chat_id: TELEGRAM_CHAT_ID,
         text: htmlPayload,
         parse_mode: "HTML",
-        disable_web_page_preview: false,
+        disable_web_page_preview: true,
+        reply_markup: replyMarkup,
       }),
     });
 
@@ -207,7 +248,7 @@ async function sendTelegramAlert(analysisText, jobUrl) {
   // 2. Fallback to clean plain text if HTML had parsing issues
   try {
     const cleanText = analysisText.replace(/<[^>]*>?/gm, "").trim();
-    let plainPayload = `🚀 [DEVRADAR OPPORTUNITY]\n\n${cleanText}\n\n🔗 Application Link:\n${jobUrl}`;
+    let plainPayload = `🚀 [DEVRADAR OPPORTUNITY]\n\n${cleanText}\n\n🔗 Application Link:\n${jobUrl}\n🔎 Google Founder Search:\n${googleFounderUrl}`;
     if (plainPayload.length > 4000) {
       plainPayload = plainPayload.slice(0, 3950) + `\n\n...[truncated]\n\n🔗 Application Link:\n${jobUrl}`;
     }
@@ -218,6 +259,7 @@ async function sendTelegramAlert(analysisText, jobUrl) {
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
         text: plainPayload,
+        reply_markup: replyMarkup,
       }),
     });
 
@@ -255,7 +297,7 @@ async function run() {
 
       try {
         const analysis = await analyzeJob(job);
-        const sent = await sendTelegramAlert(analysis, job.url);
+        const sent = await sendTelegramAlert(analysis, job);
         if (sent) {
           seenJobs.add(jobKey);
           saveSeenJobs(seenJobs);
