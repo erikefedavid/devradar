@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const config = {
-  // 1. Candidate Persona & Pitch Profile (Pure Frontend Developer)
+  // 1. Candidate Persona & Pitch Profile (First Class CS Grad + Pure Frontend)
   candidateProfile:
     process.env.CANDIDATE_PROFILE ||
-    "Frontend Developer (React, Next.js, TypeScript, JavaScript, Tailwind CSS, Responsive UI, Web Performance, State Management, Modern Web Apps).",
+    "First-Class Computer Science graduate & Frontend Engineer (React, Next.js, TypeScript, JavaScript, Tailwind CSS, Responsive Web UI, State Management, Modern Web Apps).",
 
   // 2. Allowed Title Keywords (strictly Frontend / Web UI roles)
   allowedTitleWords: [
@@ -23,7 +23,7 @@ export const config = {
     "website",
   ],
 
-  // 3. Strict Exclusions (skip if title matches ANY Senior, Lead, or Backend keyword)
+  // 3. Strict Exclusions (drop Senior, Lead, Backend, AWS, Docker, DevOps, Cloud)
   negativeTitleWords: [
     // Seniority exclusions
     "senior",
@@ -38,17 +38,28 @@ export const config = {
     "manager",
     "vp",
     "chief",
-    // Backend & infrastructure exclusions
-    "backend",
-    "back-end",
-    "back end",
+    // Heavy DevOps, Cloud & Container exclusions
+    "aws",
+    "docker",
+    "kubernetes",
+    "k8s",
     "devops",
     "sre",
     "infrastructure",
     "platform",
+    "cloud",
+    "gcp",
+    "azure",
+    "terraform",
+    // Backend & database exclusions
+    "backend",
+    "back-end",
+    "back end",
+    "fullstack",
+    "full-stack",
+    "full stack",
     "data engineer",
     "database",
-    "cloud",
     "security",
     "blockchain",
     "solidity",
