@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const config = {
-  // 1. Candidate Persona & Pitch Profile (First Class CS Grad + Pure Frontend)
+  // 1. Candidate Persona & Pitch Profile (First Class CS Grad + Full-Stack AI & Frontend)
   candidateProfile:
     process.env.CANDIDATE_PROFILE ||
-    "First-Class Computer Science graduate & Frontend Engineer (React, Next.js, TypeScript, JavaScript, Tailwind CSS, Responsive Web UI, State Management, Modern Web Apps).",
+    "First-Class Computer Science graduate & Full-Stack AI Engineer (Next.js, TypeScript, React, Tailwind CSS, Local Dense-Vector RAG, Multimodal OCR). Accepted research author at ICMLDE 2026. Creator of DocDigitize, ToolDeck, and GitSentry.",
 
   // 2. Allowed Title Keywords (strictly Frontend / Web UI roles)
   allowedTitleWords: [
