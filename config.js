@@ -77,7 +77,7 @@ export const config = {
     "content",
   ],
 
-  // 4. Core Frontend Tech Keywords (must match in title or body)
+  // 4. Core Frontend & AI Tech Keywords (must match in title or body)
   techKeywords: [
     "react",
     "next.js",
@@ -90,6 +90,10 @@ export const config = {
     "ui",
     "frontend",
     "front-end",
+    "rag",
+    "llm",
+    "agent",
+    "ai",
   ],
 
   // 5. Execution Limits

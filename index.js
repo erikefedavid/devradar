@@ -235,7 +235,7 @@ async function analyzeJob(job, auditData, retries = 2) {
     : "Live Website Telemetry: Standard web extraction.";
 
   const prompt = `
-You are a Principal Frontend Engineer preparing a candidate for high-conversion proof-of-work outreach.
+You are a Principal Frontend & AI Engineer preparing a candidate for high-conversion proof-of-work outreach.
 Target Company: ${job.company_name}
 Role Title: ${job.title}
 Data Source: ${job.source || "Web Feed"}
@@ -246,6 +246,12 @@ ${cleanDescription}
 
 Candidate Profile:
 - ${config.candidateProfile}
+- Flagship Artifacts:
+  * DocDigitize (Local Vector RAG & Groq Multimodal OCR): https://docdigitize.vercel.app
+  * GitSentry (Autonomous 60fps Animation Sentinel): https://github.com/erikefedavid/GitSentry
+  * OmniAgent (Autonomous Problem-Solving ReAct Agent): https://github.com/erikefedavid/OmniAgent
+  * ToolDeck (Curated Free AI Directory): https://aitooldesk.vercel.app
+  * Portfolio: https://daviderikefe.vercel.app
 
 Format your response strictly using Telegram-compatible HTML tags (<b>, <i>, <code>). Do NOT use Markdown characters like **, __, #, or backticks.
 
@@ -255,18 +261,18 @@ Output structure:
 🌐 <b>Live Telemetry:</b>
 ${auditData ? `• Response Latency: <code>${auditData.ttfbMs}ms</code> | Stack: <code>${auditData.detectedTech}</code>` : "• Live Stack: Web Application"}
 
-⚡ <b>Core Bottleneck:</b>
-[1-2 sentences diagnosing the exact UI, state management, or web performance friction point based on excerpt and telemetry]
+⚡ <b>Core Architecture & Bottleneck:</b>
+[1-2 sentences diagnosing the exact UI, state management, or AI/RAG performance friction point based on excerpt and telemetry]
 
 🛠️ <b>Proof-of-Work Demo (45 Mins):</b>
-[1 concrete, buildable Next.js/Tailwind standalone component or prototype proving capability]
+[1 concrete, buildable Next.js/Tailwind or Agentic prototype proving capability]
 
 💬 <b>Cold Outreach Message:</b>
-<code>[A punchy 3-sentence message to the founder/lead engineer asking permission to share the demo. No links.]</code>
+<code>[A punchy 3-sentence message to the founder/lead engineer referencing your ICMLDE 2026 paper, DocDigitize, or GitSentry. No links.]</code>
 
 🎬 <b>30-Sec Loom Script:</b>
 • <i>Hook (0-10s):</i> [Point out the specific bottleneck or UX opportunity]
-• <i>Showcase (10-25s):</i> [Screen-share the Next.js proof-of-work component in action]
+• <i>Showcase (10-25s):</i> [Screen-share your proof-of-work component in action]
 • <i>Call to Action (25-30s):</i> [Invite them to test the live code, zero pressure]
 `;
 
